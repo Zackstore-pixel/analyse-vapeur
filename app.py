@@ -27,14 +27,25 @@ from scripts.utils.io_helpers import save_to_excel
 
 st.set_page_config(page_title="Assistant Analyse Vapeur", layout="wide")
 
-# 🔐 Authentification simple
-def check_login():
-    st.sidebar.markdown("## 🔐 Connexion requise")
-    username = st.sidebar.text_input("Utilisateur", placeholder="Entrez votre nom")
-    password = st.sidebar.text_input("Mot de passe", type="password")
-    return username == "encadrant" and password == "ocp2025"
+#✅ Connexion avec session
+def login_form():
+    with st.sidebar.form(key="login_form"):
+        st.markdown("## 🔐 Connexion requise")
+        username = st.text_input("Identifiant", placeholder="ex: encadrant")
+        password = st.text_input("Mot de passe", type="password", placeholder="••••••")
+        submitted = st.form_submit_button("Se connecter")
+        if submitted:
+            if username == "encadrant" and password == "ocp2025":
+                st.session_state.logged_in = True
+            else:
+                st.error("Identifiants incorrects.")
 
-if not check_login():
+# Vérifie la session
+if "logged_in" not in st.session_state:
+    st.session_state.logged_in = False
+
+if not st.session_state.logged_in:
+    login_form()
     st.stop()
 
 st.title("🧠 Assistant Intelligent - Analyse de Données Vapeur")
