@@ -1,5 +1,7 @@
-def get_descriptive_stats(df, column):
-    import pandas as pd
-    stats = df[column].describe().to_frame(name='Value')
-    stats.index.name = 'Metric'
-    return stats.reset_index()
+import pandas as pd
+import streamlit as st
+
+@st.cache_data
+def get_descriptive_stats(df, variable):
+    stats = df[variable].describe().to_frame("Statistiques")
+    return stats
