@@ -1,0 +1,48 @@
+# 📁 Cache et virtualenv
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pkl
+*.parquet
+*.db
+
+# 🐍 Environnements virtuels
+env/
+venv/
+.venv/
+ENV/
+env.bak/
+*.egg-info/
+
+# 🧪 Fichiers temporaires
+*.log
+*.bak
+*.tmp
+*.swp
+.DS_Store
+
+# 🔧 Jupyter & IPython
+.ipynb_checkpoints/
+*.ipynb
+
+# 📦 IDEs & éditeurs
+.vscode/
+.idea/
+*.code-workspace
+
+# 🧪 Streamlit (cache local)
+.streamlit/
+
+# 🧾 Données sensibles ou volumineuses
+output/
+data/
+Data/
+datasets/
+*.xlsx
+*.xls
+*.csv
+
+# 🔒 Auth
+.secret/
+token.txt
