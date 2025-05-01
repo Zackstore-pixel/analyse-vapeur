@@ -27,7 +27,7 @@ from scripts.utils.io_helpers import save_to_excel
 
 st.set_page_config(page_title="Assistant Analyse Vapeur", layout="wide")
 
-#✅ Connexion avec session
+# ✅ Connexion avec session
 def login_form():
     with st.sidebar.form(key="login_form"):
         st.markdown("## 🔐 Connexion requise")
@@ -48,6 +48,7 @@ if not st.session_state.logged_in:
     login_form()
     st.stop()
 
+# ✅ Interface principale après connexion
 st.title("🧠 Assistant Intelligent - Analyse de Données Vapeur")
 
 step = st.sidebar.radio("Étapes de l’analyse", [
@@ -68,7 +69,88 @@ if uploaded_file:
         df = load_and_prepare_for_behavior_analysis(raw_df.copy())
         df = df.fillna(method="ffill").fillna(method="bfill")
 
-    # 🧠 Reste de ton code logique ici (EDA, PCA, etc.)
+    if step == "1. Chargement & Nettoyage":
+        col1, col2 = st.columns(2)
+        with col1:
+            st.markdown("**📄 Données brutes**")
+            st.dataframe(raw_df.head(100), use_container_width=True)
+        with col2:
+            st.markdown("**🧼 Données nettoyées**")
+            st.dataframe(df.head(100), use_container_width=True)
+        show_cleaning_diagnostic(df)
+
+    elif step == "2. Analyse Statistique Exploratoire (EDA)":
+        numeric_cols = df.select_dtypes(include=["float64", "int64"]).columns.tolist()
+        if numeric_cols:
+            selected_var = st.selectbox("Variable numérique à explorer :", numeric_cols)
+            st.write(df[selected_var].describe().to_frame("Statistiques"))
+            fig1, ax1 = plt.subplots()
+            sns.histplot(df[selected_var], kde=True, ax=ax1)
+            st.pyplot(fig1)
+            fig2, ax2 = plt.subplots()
+            sns.boxplot(x=df[selected_var], ax=ax2)
+            st.pyplot(fig2)
+        else:
+            st.warning("Aucune variable numérique trouvée.")
+
+    elif step == "3. Corrélation":
+        numeric_cols = df.select_dtypes(include=["float64", "int64"]).columns.tolist()
+        if len(numeric_cols) >= 2:
+            corr_matrix = df[numeric_cols].corr()
+            st.dataframe(corr_matrix)
+            fig, ax = plt.subplots(figsize=(10, 8))
+            sns.heatmap(corr_matrix, annot=True, cmap="coolwarm", ax=ax)
+            st.pyplot(fig)
+
+            redundant = corr_matrix[(corr_matrix.abs() > 0.8) & (corr_matrix.abs() < 1.0)].stack().reset_index()
+            redundant.columns = ["Variable 1", "Variable 2", "Corrélation"]
+            if not redundant.empty:
+                st.dataframe(redundant)
+                st.info("💡 PCA recommandée pour réduire la redondance.")
+        else:
+            st.warning("Pas assez de variables numériques pour calculer les corrélations.")
+
+    elif step == "4. Réduction de Dimension (PCA)":
+        pca_df, fig = run_pca(df)
+        st.pyplot(fig)
+        st.dataframe(pca_df.head())
+
+    elif step == "5. Clustering K-Means":
+        cluster_df, fig = run_kmeans(df)
+        st.pyplot(fig)
+        st.dataframe(cluster_df[["Cluster"]].value_counts().to_frame("Nb d'observations"))
+
+    elif step == "6. Interprétation & Recommandations":
+        st.subheader("🧾 Résumé & Interprétations")
+        st.markdown("**📌 Ce que nous avons appris :**")
+        st.markdown("- Nettoyage, analyse, corrélation, PCA, clustering")
+
+        st.markdown("**🔍 Recommandations possibles :**")
+        st.markdown("- Fort débit vapeur + basse température → gaspillage thermique")
+        st.markdown("- Faible débit + température stable → fonctionnement optimal")
+        st.markdown("- Suivi en temps réel des variables les plus corrélées au débit")
+
+        if 'timestamp' in df.columns:
+            time_cols = df.select_dtypes(include=["float64", "int64"]).columns.tolist()
+            selected_time_var = st.selectbox("📈 Variable à visualiser sur le temps :", time_cols)
+
+            df['timestamp'] = pd.to_datetime(df['timestamp'], errors='coerce')
+            df = df.dropna(subset=["timestamp"])
+
+            min_date, max_date = df['timestamp'].min(), df['timestamp'].max()
+            date_range = st.slider("Plage temporelle :", min_value=min_date, max_value=max_date,
+                                   value=(min_date, max_date), format="YYYY-MM-DD HH:mm")
+
+            filtered_df = df[(df['timestamp'] >= date_range[0]) & (df['timestamp'] <= date_range[1])]
+
+            fig_time, ax_time = plt.subplots(figsize=(12, 4))
+            ax_time.plot(filtered_df['timestamp'], filtered_df[selected_time_var], color='tab:blue')
+            ax_time.set_title(f"{selected_time_var} en fonction du temps")
+            ax_time.set_xlabel("Temps")
+            ax_time.set_ylabel(selected_time_var)
+            st.pyplot(fig_time)
+        else:
+            st.warning("Colonne temporelle non détectée.")
 
 else:
     st.info("💡 Merci d'importer un fichier Excel pour démarrer l’analyse.")
